@@ -4,7 +4,7 @@ pipeline {
     environment {
         BE_IMAGE_NAME = "weather-be"
         BE_IMAGE_TAG = "latest"
-        BE_HOST_PORT = "8081"  // change if 8080 busy
+        BE_HOST_PORT = "8081"  // Change if 8080 busy
     }
 
     stages {
@@ -23,7 +23,9 @@ pipeline {
 
         stage('Build Podman Image') {
             steps {
-                bat "podman build -t %BE_IMAGE_NAME%:%BE_IMAGE_TAG% ."
+                bat """
+                podman build -t %BE_IMAGE_NAME%:%BE_IMAGE_TAG% .
+                """
             }
         }
 
@@ -46,11 +48,24 @@ pipeline {
         stage('Backend Health Check') {
             steps {
                 bat """
-                REM Wait 15 seconds
-                timeout /t 15
+                @echo off
+                set PORT=%BE_HOST_PORT%
+                set MAX_TRIES=12
+                set COUNT=0
 
-                REM Try connecting to backend
-                powershell -Command "try {Invoke-WebRequest -UseBasicParsing http://localhost:%BE_HOST_PORT% -TimeoutSec 10} catch {Write-Error 'Backend not responding'; exit 1}"
+                :CHECK
+                powershell -Command "try {Invoke-WebRequest -UseBasicParsing http://localhost:%PORT% -TimeoutSec 5} catch { exit 1 }"
+                if %ERRORLEVEL% neq 0 (
+                    set /a COUNT+=1
+                    if %COUNT% geq %MAX_TRIES% (
+                        echo Backend not responding after %MAX_TRIES% tries
+                        exit /b 1
+                    )
+                    echo Waiting for backend to start... Try %COUNT%
+                    timeout /t 5
+                    goto CHECK
+                )
+                echo Backend is up!
                 """
             }
         }
@@ -60,7 +75,7 @@ pipeline {
                 script {
                     def mvn = tool 'Default Maven'
                     withSonarQubeEnv('MySonarQube') {
-                        bat "\"${mvn}\\bin\\mvn\" clean verify sonar:sonar -Dsonar.projectKeysqp_33d8c8ecc201dba5f917eb7661e40f4e3c43b343 -Dsonar.projectName='weather'"
+                        bat "\"${mvn}\\bin\\mvn\" clean verify sonar:sonar -Dsonar.projectKey=sqp_33d8c8ecc201dba5f917eb7661e40f4e3c43b343 -Dsonar.projectName='weather'"
                     }
                 }
             }
