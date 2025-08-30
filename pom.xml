@@ -28,6 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+			<sonar.host.url>http://localhost:9090</sonar.host.url>
+
 	</properties>
 	<dependencies>
 		<dependency>
@@ -124,6 +126,7 @@
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
 				<version>3.6.0.1398</version>
+
 			</plugin>
 		</plugins>
 	</build>
