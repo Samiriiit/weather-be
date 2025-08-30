@@ -46,8 +46,11 @@ pipeline {
         stage('Backend Health Check') {
             steps {
                 bat """
-                timeout /t 5 /nobreak >nul
-                curl http://localhost:%BE_HOST_PORT% || echo "Backend not responding" && exit /b 1
+                REM Wait 15 seconds
+                timeout /t 15
+
+                REM Try connecting to backend
+                powershell -Command "try {Invoke-WebRequest -UseBasicParsing http://localhost:%BE_HOST_PORT% -TimeoutSec 10} catch {Write-Error 'Backend not responding'; exit 1}"
                 """
             }
         }
