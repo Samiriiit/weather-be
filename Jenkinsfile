@@ -7,6 +7,8 @@ pipeline {
         BE_HOST_PORT = "8081"  // Change if 8080 busy
         ZIPKIN_IMAGE_NAME = "zipkin"
         ZIPKIN_HOST_PORT = "9411"
+         GRAFANA_IMAGE_NAME = "grafana"
+         GRAFANA_HOST_PORT = "3002"
     }
 
     stages {
@@ -49,20 +51,33 @@ pipeline {
             }
         }
         stage('Start Zipkin Server') {
-            steps {
-                bat """
-                REM Stop existing Zipkin container
-                podman ps -a --format "{{.Names}}" | findstr /I "%ZIPKIN_IMAGE_NAME%" >nul
-                IF %ERRORLEVEL%==0 (
-                    podman stop %ZIPKIN_IMAGE_NAME%
-                    podman rm %ZIPKIN_IMAGE_NAME%
-                )
-                
-                REM Run Zipkin
-                podman run -d -p %ZIPKIN_HOST_PORT%:9411 --name %ZIPKIN_IMAGE_NAME% openzipkin/zipkin
-                """
-            }
-        }
+                    steps {
+                        bat """
+                        REM Stop existing Zipkin container
+                        podman ps -a --format "{{.Names}}" | findstr /I "%ZIPKIN_IMAGE_NAME%" >nul
+                        IF %ERRORLEVEL%==0 (
+                            podman stop %ZIPKIN_IMAGE_NAME%
+                            podman rm %ZIPKIN_IMAGE_NAME%
+                        )
+                        REM Run Zipkin
+                        podman run -d -p %ZIPKIN_HOST_PORT%:9411 --name %ZIPKIN_IMAGE_NAME% openzipkin/zipkin
+                        """
+                    }
+                }
+         stage('Start Grafana') {
+                    steps {
+                        bat """
+                        REM Stop existing Grafana container
+                        podman ps -a --format "{{.Names}}" | findstr /I "%GRAFANA_IMAGE_NAME%" >nul
+                        IF %ERRORLEVEL%==0 (
+                            podman stop %GRAFANA_IMAGE_NAME%
+                            podman rm %GRAFANA_IMAGE_NAME%
+                        )
+                        REM Run Grafana
+                        podman run -d -p %GRAFANA_HOST_PORT%:3000 --name %GRAFANA_IMAGE_NAME% grafana/grafana
+                        """
+                    }
+                }
 
         stage('Run Backend Container') {
             steps {
