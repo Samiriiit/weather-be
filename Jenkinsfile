@@ -17,13 +17,13 @@ pipeline {
 
         stage('Build Backend') {
             steps {
-                bat 'mvn clean package -DskipTests'
+                bat 'mvn clean package'
             }
         }
 
-         stage('JaCoCo Report') {
+      stage('Run Tests & Generate Jacoco') {
             steps {
-                bat 'mvn jacoco:report'
+                bat 'mvn test jacoco:report'
             }
         }
           stage('SonarQube Analysis') {
