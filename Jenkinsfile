@@ -97,30 +97,30 @@ pipeline {
         
 
 
-//        stage('Backend Health Check') {
-//     steps {
-//         powershell """
-//         \$port = ${BE_HOST_PORT}
-//         \$maxTries = 12
-//         \$count = 0
+       stage('Backend Health Check') {
+    steps {
+        powershell """
+        \$port = ${BE_HOST_PORT}
+        \$maxTries = 12
+        \$count = 0
 
-//         do {
-//             try {
-//                 Invoke-WebRequest -UseBasicParsing http://localhost:\$port -TimeoutSec 5
-//                 Write-Host "Backend is up!"
-//                 exit 0
-//             } catch {
-//                 Write-Host "Waiting for backend to start... Try \$count"
-//                 Start-Sleep -Seconds 5
-//                 \$count++
-//             }
-//         } while (\$count -lt \$maxTries)
+        do {
+            try {
+                Invoke-WebRequest -UseBasicParsing http://localhost:\$port -TimeoutSec 5
+                Write-Host "Backend is up!"
+                exit 0
+            } catch {
+                Write-Host "Waiting for backend to start... Try \$count"
+                Start-Sleep -Seconds 5
+                \$count++
+            }
+        } while (\$count -lt \$maxTries)
 
-//         Write-Error "Backend not responding after \$maxTries tries"
-//         exit 1
-//         """
-//     }
-// }
+        Write-Error "Backend not responding after \$maxTries tries"
+        exit 1
+        """
+    }
+}
       
 
     }
