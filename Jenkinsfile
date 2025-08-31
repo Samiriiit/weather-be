@@ -5,6 +5,8 @@ pipeline {
         BE_IMAGE_NAME = "weather-be"
         BE_IMAGE_TAG = "latest"
         BE_HOST_PORT = "8081"  // Change if 8080 busy
+        ZIPKIN_IMAGE_NAME = "zipkin"
+        ZIPKIN_HOST_PORT = "9411"
     }
 
     stages {
@@ -43,6 +45,21 @@ pipeline {
             steps {
                 bat """
                 podman build -t %BE_IMAGE_NAME%:%BE_IMAGE_TAG% .
+                """
+            }
+        }
+        stage('Start Zipkin Server') {
+            steps {
+                bat """
+                REM Stop existing Zipkin container
+                podman ps -a --format "{{.Names}}" | findstr /I "%ZIPKIN_IMAGE_NAME%" >nul
+                IF %ERRORLEVEL%==0 (
+                    podman stop %ZIPKIN_IMAGE_NAME%
+                    podman rm %ZIPKIN_IMAGE_NAME%
+                )
+                
+                REM Run Zipkin
+                podman run -d -p %ZIPKIN_HOST_PORT%:9411 --name %ZIPKIN_IMAGE_NAME% openzipkin/zipkin
                 """
             }
         }
