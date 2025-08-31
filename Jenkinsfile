@@ -21,6 +21,24 @@ pipeline {
             }
         }
 
+         stage('JaCoCo Report') {
+            steps {
+                bat 'mvn jacoco:report'
+            }
+        }
+          stage('SonarQube Analysis') {
+    steps {
+        script {
+            def mvn = tool 'Maven3'  
+            withSonarQubeEnv('weather') {  
+                bat "\"${mvn}\\bin\\mvn\" clean verify sonar:sonar -Dsonar.projectKey=weather-app -Dsonar.projectName=weather-app"
+                
+            }
+        }
+    }
+}
+        
+
         stage('Build Podman Image') {
             steps {
                 bat """
@@ -44,17 +62,7 @@ pipeline {
                 """
             }
         }
-          stage('SonarQube Analysis') {
-    steps {
-        script {
-            def mvn = tool 'Maven3'  
-            withSonarQubeEnv('weather') {  
-                bat "\"${mvn}\\bin\\mvn\" clean verify sonar:sonar -Dsonar.projectKey=weather-app -Dsonar.projectName=weather-app"
-                
-            }
-        }
-    }
-}
+        
 
 
        stage('Backend Health Check') {
