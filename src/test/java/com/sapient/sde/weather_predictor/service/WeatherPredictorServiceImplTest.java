@@ -172,6 +172,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
@@ -192,6 +193,9 @@ class WeatherPredictorServiceImplTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -239,14 +243,31 @@ class WeatherPredictorServiceImplTest {
     }
 
 //    @Test
-//    void testGetWeatherForecastServiceUnavailable() {
+//    void testGetWeatherForecastSuccess() throws Exception {
 //        String city = "London";
-//        when(restTemplate.getForEntity(anyString(), eq(JsonNode.class), eq(city), anyString()))
-//                .thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+//        boolean offlineMode = true;
 //
-//        assertThrows(ServiceNotAvailableException.class, () -> service.getWeatherForecast(city, false));
+//        String json = "{ \"city\": {\"name\":\"London\",\"country\":\"GB\",\"timezone\":0}, " +
+//                "\"list\": [ { \"dt_txt\":\"2025-08-15 12:00:00\", " +
+//                "\"main\": {\"temp\":280.0,\"temp_min\":278.0,\"temp_max\":282.0,\"feels_like\":279.0,\"humidity\":80,\"pressure\":1012}, " +
+//                "\"wind\": {\"speed\":5.0}, " +
+//                "\"clouds\": {\"all\":20}, " +
+//                "\"pop\":0.1, " +
+//                "\"visibility\":10000, " +
+//                "\"weather\":[{\"icon\":\"01d\",\"main\":\"Clear\"}] } ] }";
+//
+//        JsonNode root = new ObjectMapper().readTree(json);
+//
+//        when(restTemplate.getForEntity(anyString(), eq(JsonNode.class), eq(city), anyString()))
+//                .thenReturn(new ResponseEntity<>(root, HttpStatus.OK));
+//
+//        // Call with offlineMode flag
+//        WeatherResponseDto response = service.getWeatherForecast(city, offlineMode);
+//
+//        assertNotNull(response);
+//        assertEquals("London", response.getCity().getName());
+//        assertFalse(response.getDayForecastList().isEmpty());
 //    }
-
     // ================== generateAdvice() branch coverage ==================
     @Test
     void testAdviceHighTemp() throws Exception {

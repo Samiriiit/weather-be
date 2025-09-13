@@ -22,7 +22,7 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     private String apiKey;
 
     // Package-private setter for testing
-    void setApiKey(String apiKey) {
+    public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
     }
     private static final String API_URL =
@@ -34,7 +34,7 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     @Autowired
     private RedisTemplate<String, WeatherResponseDto> redisTemplate;
 
-    void setRestTemplate(RestTemplate restTemplate) { this.restTemplate = restTemplate; }
+    public void setRestTemplate(RestTemplate restTemplate) { this.restTemplate = restTemplate; }
 
     private WeatherResponseDto getFromCache(String city) {
         ValueOperations<String, WeatherResponseDto> ops = redisTemplate.opsForValue();

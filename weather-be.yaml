@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: weather-be
+  labels:
+    app: weather-be
+spec:
+  containers:
+    - name: weather-be
+      image: weather-be:latest
+      ports:
+        - containerPort: 8081
+      env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: REDIS_HOST
+          value: "weather-redis"
+        - name: REDIS_PORT
+          value: "6379"
