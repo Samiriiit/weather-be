@@ -21,7 +21,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Step 2: Run stage
-FROM openjdk:11-jdk
+FROM openjdk:17-jdk
 WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
