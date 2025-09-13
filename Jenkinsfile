@@ -152,6 +152,8 @@ pipeline {
         ZIPKIN_HOST_PORT = "9411"
         GRAFANA_IMAGE_NAME = "grafana"
         GRAFANA_HOST_PORT = "3002"
+        SPRING_REDIS_HOST = 'weather-redis'
+        SPRING_REDIS_PORT = '6379'
     }
 
     stages {
@@ -222,7 +224,10 @@ pipeline {
                     podman stop %BE_IMAGE_NAME%-container
                     podman rm %BE_IMAGE_NAME%-container
                 )
-                podman run -d -p %BE_HOST_PORT%:8081 --name %BE_IMAGE_NAME%-container %BE_IMAGE_NAME%:%BE_IMAGE_TAG%
+                podman run -d -p %BE_HOST_PORT%:8081 --name %BE_IMAGE_NAME%-container ^
+                    -e SPRING_REDIS_HOST=weather-redis ^
+                    -e SPRING_REDIS_PORT=6379 ^
+                    %BE_IMAGE_NAME%:%BE_IMAGE_TAG%
                 """
             }
         }
