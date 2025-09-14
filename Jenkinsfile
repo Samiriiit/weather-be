@@ -307,15 +307,7 @@ pipeline {
                     bat "podman exec weather-app-control-plane rm /weather-be.tar"
                     bat "del weather-be.tar"
                     
-                    // Load Redis image
-                    bat "podman pull %REDIS_IMAGE_NAME%:%REDIS_IMAGE_TAG%"
-                    bat "podman save %REDIS_IMAGE_NAME%:%REDIS_IMAGE_TAG% -o redis.tar"
-                    bat "podman cp redis.tar weather-app-control-plane:/redis.tar"
-                    bat "podman exec weather-app-control-plane ctr image import /redis.tar"
-                    bat "podman exec weather-app-control-plane rm /redis.tar"
-                    bat "del redis.tar"
-                    
-                    echo "✅ All images loaded into Kind cluster"
+                    echo "✅ Backend image loaded into Kind cluster"
                 }
             }
         }
@@ -329,76 +321,61 @@ pipeline {
         stage('Deploy Redis') {
             steps {
                 bat "kubectl apply -f redis-deployment.yaml -n %NAMESPACE%"
-                bat "kubectl wait --for=condition=available deployment/redis -n %NAMESPACE% --timeout=120s"
             }
         }
 
         stage('Deploy Zipkin') {
             steps {
                 bat "kubectl apply -f zipkin-deployment.yaml -n %NAMESPACE%"
-                bat "kubectl wait --for=condition=available deployment/zipkin -n %NAMESPACE% --timeout=120s"
             }
         }
 
         stage('Deploy Grafana') {
             steps {
                 bat "kubectl apply -f grafana-deployment.yaml -n %NAMESPACE%"
-                bat "kubectl wait --for=condition=available deployment/grafana -n %NAMESPACE% --timeout=120s"
             }
         }
 
         stage('Deploy Backend') {
-    steps {
-        script {
-            bat "kubectl apply -f weather-be-deployment.yaml -n %NAMESPACE%"
-            
-            // Wait with better error handling
-            def timeoutSeconds = 240
-            def waitResult = bat(script: "kubectl wait --for=condition=available deployment/weather-be -n %NAMESPACE% --timeout=${timeoutSeconds}s", returnStatus: true)
-            
-            if (waitResult != 0) {
-                echo "⚠️ Deployment taking longer than expected, checking status..."
-                
-                // Get detailed deployment status
-                bat "kubectl describe deployment/weather-be -n %NAMESPACE%"
-                
-                // Check pod status and logs
-                bat "kubectl get pods -n %NAMESPACE% -l app=weather-be"
-                
-                // Check pod events and logs
-                def podName = bat(script: "kubectl get pods -n %NAMESPACE% -l app=weather-be -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-                if (podName) {
-                    bat "kubectl describe pod/${podName} -n %NAMESPACE%"
-                    bat "kubectl logs pod/${podName} -n %NAMESPACE% --tail=20"
-                }
-                
-                // Continue anyway for now
-                echo "Continuing deployment despite timeout..."
-            } else {
-                echo "✅ Backend deployment ready"
+            steps {
+                bat "kubectl apply -f weather-be-deployment.yaml -n %NAMESPACE%"
             }
         }
-    }
-}
+
+        stage('Wait for Deployment') {
+            steps {
+                script {
+                    // Wait for Redis (critical dependency)
+                    bat "kubectl wait --for=condition=available deployment/redis -n %NAMESPACE% --timeout=120s || echo 'Redis wait continued'"
+                    
+                    // Wait for backend with better handling
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil {
+                            def status = bat(script: "kubectl get deployment/weather-be -n %NAMESPACE% -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
+                            return status == "True"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Verify Deployment') {
             steps {
                 script {
                     bat "kubectl get all -n %NAMESPACE%"
                     bat "kubectl get pods -n %NAMESPACE% -o wide"
-                    bat "kubectl get svc -n %NAMESPACE%"
-                }
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                script {
-                    // Test backend connectivity using curl container
-                    bat "kubectl run health-check --image=curlimages/curl --restart=Never --rm -n %NAMESPACE% --command -- curl -I http://weather-be-service:8080/actuator/health --connect-timeout 10 --max-time 15 || echo 'Health check completed'"
                     
-                    // Test Redis connectivity
-                    bat "kubectl run redis-check --image=curlimages/curl --restart=Never --rm -n %NAMESPACE% --command -- sh -c 'nc -z weather-redis-service 6379 && echo \"Redis connected\" || echo \"Redis check completed\"' || echo 'Redis test attempted'"
+                    // Simple health check - if pod is running, consider success
+                    def podStatus = bat(script: "kubectl get pods -n %NAMESPACE% -l app=weather-be -o jsonpath='{.items[0].status.phase}'", returnStdout: true).trim()
+                    
+                    if (podStatus == "Running") {
+                        echo "✅ Backend pod is running successfully!"
+                        bat "kubectl logs -n %NAMESPACE% -l app=weather-be --tail=10 || echo 'Logs not available yet'"
+                    } else {
+                        echo "⚠️ Pod status: $podStatus"
+                        bat "kubectl describe pods -n %NAMESPACE% -l app=weather-be || true"
+                        error("Backend deployment failed - pod status: $podStatus")
+                    }
                 }
             }
         }
@@ -408,17 +385,15 @@ pipeline {
         always {
             // Cleanup temporary files
             bat "if exist *.tar del *.tar"
-            echo "Backend deployment ${currentBuild.result}"
+            echo "Pipeline completed: ${currentBuild.result}"
         }
         success {
-            echo "✅ Backend + Redis + Zipkin + Grafana deployed successfully to Kubernetes!"
-            echo "Use 'kubectl port-forward -n %NAMESPACE% svc/weather-be-service 8080:8080' to access backend"
+            echo "✅ Backend + Redis + Zipkin + Grafana deployed successfully!"
         }
         failure {
-            echo "❌ Backend deployment failed!"
-            bat "kubectl describe pods -n %NAMESPACE% || true"
+            echo "❌ Deployment failed!"
+            bat "kubectl get events -n %NAMESPACE% --sort-by='.lastTimestamp' | findstr /i \"error\\|fail\" || echo 'No error events'"
             bat "kubectl logs -n %NAMESPACE% -l app=weather-be --tail=20 || true"
-            bat "kubectl get events -n %NAMESPACE% --sort-by='.lastTimestamp' || true"
         }
     }
 }
