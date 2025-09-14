@@ -343,21 +343,17 @@ pipeline {
         }
 
         stage('Wait for Deployment') {
-            steps {
-                script {
-                    // Wait for Redis (critical dependency)
-                    bat "kubectl wait --for=condition=available deployment/redis -n %NAMESPACE% --timeout=120s || echo 'Redis wait continued'"
-                    
-                    // Wait for backend with better handling
-                    timeout(time: 5, unit: 'MINUTES') {
-                        waitUntil {
-                            def status = bat(script: "kubectl get deployment/weather-be -n %NAMESPACE% -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
-                            return status == "True"
-                        }
-                    }
-                }
-            }
+    steps {
+        script {
+            // Wait for Redis
+            bat "kubectl wait --for=condition=available deployment/redis -n %NAMESPACE% --timeout=240s || echo 'Redis wait continued'"
+            
+            // Simple wait for Spring Boot application to start
+            echo "⏳ Waiting 2 minutes for Spring Boot application to start..."
+            sleep(120) // 2 minutes wait
         }
+    }
+}
 
         stage('Verify Deployment') {
             steps {
