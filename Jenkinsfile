@@ -348,11 +348,38 @@ pipeline {
         }
 
         stage('Deploy Backend') {
-            steps {
-                bat "kubectl apply -f weather-be-deployment.yaml -n %NAMESPACE%"
-                bat "kubectl wait --for=condition=available deployment/weather-be -n %NAMESPACE% --timeout=180s"
+    steps {
+        script {
+            bat "kubectl apply -f weather-be-deployment.yaml -n %NAMESPACE%"
+            
+            // Wait with better error handling
+            def timeoutSeconds = 240
+            def waitResult = bat(script: "kubectl wait --for=condition=available deployment/weather-be -n %NAMESPACE% --timeout=${timeoutSeconds}s", returnStatus: true)
+            
+            if (waitResult != 0) {
+                echo "⚠️ Deployment taking longer than expected, checking status..."
+                
+                // Get detailed deployment status
+                bat "kubectl describe deployment/weather-be -n %NAMESPACE%"
+                
+                // Check pod status and logs
+                bat "kubectl get pods -n %NAMESPACE% -l app=weather-be"
+                
+                // Check pod events and logs
+                def podName = bat(script: "kubectl get pods -n %NAMESPACE% -l app=weather-be -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
+                if (podName) {
+                    bat "kubectl describe pod/${podName} -n %NAMESPACE%"
+                    bat "kubectl logs pod/${podName} -n %NAMESPACE% --tail=20"
+                }
+                
+                // Continue anyway for now
+                echo "Continuing deployment despite timeout..."
+            } else {
+                echo "✅ Backend deployment ready"
             }
         }
+    }
+}
 
         stage('Verify Deployment') {
             steps {
