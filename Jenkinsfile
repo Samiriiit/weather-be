@@ -395,95 +395,138 @@
 // }
 
 
+// pipeline {
+//     agent any
+
+//     environment {
+//         BE_IMAGE_NAME = "weather-be"
+//         BE_IMAGE_TAG = "latest"
+//         CLUSTER_NAME = "weather-app"
+//     }
+
+//     stages {
+//         stage('Checkout Backend') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
+//             }
+//         }
+
+//         stage('Build Backend') {
+//             steps {
+//                 bat 'mvn clean package -DskipTests'
+//             }
+//         }
+
+//         stage('Build Image') {
+//             steps {
+//                 bat "podman build -t %BE_IMAGE_NAME%:%BE_IMAGE_TAG% ."
+//             }
+//         }
+
+//         stage('Load Image into Kind') {
+//             steps {
+//                 script {
+//                     bat "podman save %BE_IMAGE_NAME%:%BE_IMAGE_TAG% -o weather-be.tar"
+//                     bat "podman cp weather-be.tar weather-app-control-plane:/weather-be.tar"
+//                     bat "podman exec weather-app-control-plane ctr image import /weather-be.tar"
+//                     bat "podman exec weather-app-control-plane rm /weather-be.tar"
+//                     bat "del weather-be.tar"
+//                 }
+//             }
+//         }
+
+//         stage('Deploy Backend') {
+//             steps {
+//                 bat "kubectl apply -f weather-be-deployment.yaml"
+//             }
+//         }
+
+//         stage('Wait for Startup') {
+//             steps {
+//                 script {
+//                     // Wait 2 minutes for Spring Boot to start
+//                     echo "⏳ Waiting for Spring Boot application to start..."
+//                     sleep(120)
+//                 }
+//             }
+//         }
+
+//         stage('Verify Deployment') {
+//             steps {
+//                 script {
+//                     bat "kubectl get pods -l app=weather-be"
+//                     bat "kubectl get svc -l app=weather-be"
+                    
+//                     // Check if pod is running (ignore probes for now)
+//                     def podStatus = bat(script: "kubectl get pods -l app=weather-be -o jsonpath='{.items[0].status.phase}'", returnStdout: true).trim()
+                    
+//                     if (podStatus == "Running") {
+//                         echo "✅ BE deployed successfully!"
+//                         bat "kubectl logs -l app=weather-be --tail=10 || echo 'Logs check'"
+//                     } else {
+//                         echo "⚠️ Pod status: $podStatus - checking details..."
+//                         bat "kubectl describe pods -l app=weather-be || true"
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             bat "if exist *.tar del *.tar"
+//             echo "Pipeline completed: ${currentBuild.result}"
+//         }
+//         success {
+//             echo "🎉 Backend deployed successfully!"
+//             echo "Use: kubectl port-forward svc/weather-be-service 8081:8081"
+//         }
+//         failure {
+//             echo "❌ Deployment failed!"
+//             bat "kubectl logs -l app=weather-be --tail=20 || true"
+//         }
+//     }
+// }
+
 pipeline {
     agent any
-
-    environment {
-        BE_IMAGE_NAME = "weather-be"
-        BE_IMAGE_TAG = "latest"
-        CLUSTER_NAME = "weather-app"
-    }
-
     stages {
-        stage('Checkout Backend') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
             }
         }
-
-        stage('Build Backend') {
-            steps {
-                bat 'mvn clean package -DskipTests'
-            }
-        }
-
+        
         stage('Build Image') {
             steps {
-                bat "podman build -t %BE_IMAGE_NAME%:%BE_IMAGE_TAG% ."
+                bat 'mvn clean package -DskipTests'
+                bat 'minikube image build -t weather-be:latest .'
             }
         }
-
-        stage('Load Image into Kind') {
+        
+        stage('Deploy') {
             steps {
-                script {
-                    bat "podman save %BE_IMAGE_NAME%:%BE_IMAGE_TAG% -o weather-be.tar"
-                    bat "podman cp weather-be.tar weather-app-control-plane:/weather-be.tar"
-                    bat "podman exec weather-app-control-plane ctr image import /weather-be.tar"
-                    bat "podman exec weather-app-control-plane rm /weather-be.tar"
-                    bat "del weather-be.tar"
-                }
+                bat 'kubectl apply -f redis-deployment.yaml'
+                bat 'kubectl apply -f zipkin-deployment.yaml'
+                bat 'kubectl apply -f grafana-deployment.yaml'
+                bat 'kubectl apply -f weather-be-deployment.yaml'
             }
         }
-
-        stage('Deploy Backend') {
+        
+        stage('Verify') {
             steps {
-                bat "kubectl apply -f weather-be-deployment.yaml"
-            }
-        }
-
-        stage('Wait for Startup') {
-            steps {
-                script {
-                    // Wait 2 minutes for Spring Boot to start
-                    echo "⏳ Waiting for Spring Boot application to start..."
-                    sleep(120)
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                script {
-                    bat "kubectl get pods -l app=weather-be"
-                    bat "kubectl get svc -l app=weather-be"
-                    
-                    // Check if pod is running (ignore probes for now)
-                    def podStatus = bat(script: "kubectl get pods -l app=weather-be -o jsonpath='{.items[0].status.phase}'", returnStdout: true).trim()
-                    
-                    if (podStatus == "Running") {
-                        echo "✅ BE deployed successfully!"
-                        bat "kubectl logs -l app=weather-be --tail=10 || echo 'Logs check'"
-                    } else {
-                        echo "⚠️ Pod status: $podStatus - checking details..."
-                        bat "kubectl describe pods -l app=weather-be || true"
-                    }
-                }
+                sleep(30)
+                bat "kubectl get pods -l app=weather-be | findstr Running"
+                echo "✅ Backend Pod is Running"
             }
         }
     }
-
+    
     post {
         always {
-            bat "if exist *.tar del *.tar"
-            echo "Pipeline completed: ${currentBuild.result}"
-        }
-        success {
-            echo "🎉 Backend deployed successfully!"
-            echo "Use: kubectl port-forward svc/weather-be-service 8081:8081"
-        }
-        failure {
-            echo "❌ Deployment failed!"
-            bat "kubectl logs -l app=weather-be --tail=20 || true"
+            echo "=== FINAL STATUS ==="
+            bat 'kubectl get pods'
+            bat 'kubectl get svc'
         }
     }
 }

@@ -68,6 +68,56 @@
 #   type: ClusterIP
 
 
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: weather-be
+#   labels:
+#     app: weather-be
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: weather-be
+#   template:
+#     metadata:
+#       labels:
+#         app: weather-be
+#     spec:
+#       containers:
+#       - name: weather-be
+#         image: localhost/weather-be:latest
+#         imagePullPolicy: Never
+#         ports:
+#         - containerPort: 8081
+#         env:
+#         - name: SPRING_REDIS_HOST
+#           value: "localhost"  # Change to your Redis service name if needed
+#         - name: SPRING_REDIS_PORT
+#           value: "6379"
+#         # Remove probes temporarily
+#         resources:
+#           requests:
+#             memory: "512Mi"
+#             cpu: "250m"
+#           limits:
+#             memory: "1Gi"
+#             cpu: "500m"
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: weather-be-service
+#   labels:
+#     app: weather-be
+# spec:
+#   selector:
+#     app: weather-be
+#   ports:
+#   - port: 8081
+#     targetPort: 8081
+#   type: ClusterIP
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -86,16 +136,15 @@ spec:
     spec:
       containers:
       - name: weather-be
-        image: localhost/weather-be:latest
+        image: weather-be:latest  # Changed from localhost/weather-be:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 8081
         env:
         - name: SPRING_REDIS_HOST
-          value: "localhost"  # Change to your Redis service name if needed
+          value: "redis-service"  # Changed from "localhost" to Redis service name
         - name: SPRING_REDIS_PORT
           value: "6379"
-        # Remove probes temporarily
         resources:
           requests:
             memory: "512Mi"

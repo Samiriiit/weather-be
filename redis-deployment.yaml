@@ -30,7 +30,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: weather-redis-service
+  name: redis-service  # CHANGED FROM weather-redis-service
   namespace: weather-app
 spec:
   selector:
