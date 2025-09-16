@@ -507,8 +507,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 bat 'kubectl apply -f redis-deployment.yaml'
-                bat 'kubectl apply -f zipkin-deployment.yaml'
-                bat 'kubectl apply -f grafana-deployment.yaml'
+                // bat 'kubectl apply -f zipkin-deployment.yaml'
+                // bat 'kubectl apply -f grafana-deployment.yaml'
                 bat 'kubectl apply -f weather-be-deployment.yaml'
             }
         }

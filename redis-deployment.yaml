@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: weather-app
+  # REMOVE THIS: namespace: weather-app
 spec:
   replicas: 1
   selector:
@@ -19,19 +19,12 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 6379
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "250m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-service  # CHANGED FROM weather-redis-service
-  namespace: weather-app
+  name: redis-service  # Make sure this matches what backend expects
+  # REMOVE THIS: namespace: weather-app
 spec:
   selector:
     app: redis
