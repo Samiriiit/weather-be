@@ -136,8 +136,8 @@ spec:
     spec:
       containers:
       - name: weather-be
-        image: weather-be:latest  # Changed from localhost/weather-be:latest
-        imagePullPolicy: Never
+        image: docker.io/samiriiit1/weather-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8081
         env:
