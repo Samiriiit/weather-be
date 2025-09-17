@@ -531,8 +531,61 @@
 //     }
 // }
 
+// pipeline {
+//     agent any
+//     stages {
+//         stage('Checkout Code') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
+//             }
+//         }
+
+//         stage('Build Image') {
+//             steps {
+//                 bat 'mvn clean package -DskipTests'
+//                 bat 'podman build -t docker.io/samiriiit1/weather-app:latest .'
+//             }
+//         }
+
+//         stage('Push Image') {
+//             steps {
+//                 withCredentials([usernamePassword(credentialsId: 'docker-hub', 
+//                                                 usernameVariable: 'DOCKER_USER', 
+//                                                 passwordVariable: 'DOCKER_PASS')]) {
+//                     bat 'podman login docker.io -u %DOCKER_USER% -p %DOCKER_PASS%'
+//                     bat 'podman push docker.io/%DOCKER_USER%/weather-app:latest'
+//                 }
+//             }
+//         }
+
+//         stage('Deploy') {
+//             steps {
+//                 bat 'kubectl apply -f redis-deployment.yaml'
+//                 bat 'kubectl apply -f weather-be-deployment.yaml'
+//             }
+//         }
+
+//         stage('Verify') {
+//             steps {
+//                 sleep(30)
+//                 bat 'kubectl get pods -l app=weather-be | findstr Running'
+//                 echo "✅ Backend Pod is Running"
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             echo "=== FINAL STATUS ==="
+//             bat 'kubectl get pods'
+//             bat 'kubectl get svc'
+//         }
+//     }
+// }
+
 pipeline {
     agent any
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -542,32 +595,30 @@ pipeline {
 
         stage('Build Image') {
             steps {
+                // Build the BE jar first
                 bat 'mvn clean package -DskipTests'
-                bat 'podman build -t docker.io/samiriiit1/weather-app:latest .'
-            }
-        }
 
-        stage('Push Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub', 
-                                                usernameVariable: 'DOCKER_USER', 
-                                                passwordVariable: 'DOCKER_PASS')]) {
-                    bat 'podman login docker.io -u %DOCKER_USER% -p %DOCKER_PASS%'
-                    bat 'podman push docker.io/%DOCKER_USER%/weather-app:latest'
-                }
+                // Build Docker/Podman image inside Minikube
+                bat 'minikube image build -t weather-be:latest .'
             }
         }
 
         stage('Deploy') {
             steps {
+                // Deploy Redis if needed
                 bat 'kubectl apply -f redis-deployment.yaml'
+
+                // Deploy BE using local image
                 bat 'kubectl apply -f weather-be-deployment.yaml'
             }
         }
 
         stage('Verify') {
             steps {
-                sleep(30)
+                // Wait for pod to come up
+                sleep(120)
+
+                // Verify BE pod is running
                 bat 'kubectl get pods -l app=weather-be | findstr Running'
                 echo "✅ Backend Pod is Running"
             }
@@ -577,8 +628,8 @@ pipeline {
     post {
         always {
             echo "=== FINAL STATUS ==="
-            bat 'kubectl get pods'
-            bat 'kubectl get svc'
+            bat 'kubectl get pods -l app=weather-be'
+            bat 'kubectl get svc -l app=weather-be'
         }
     }
 }
