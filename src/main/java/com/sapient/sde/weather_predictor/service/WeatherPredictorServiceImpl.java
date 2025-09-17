@@ -63,7 +63,7 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
             WeatherResponseDto responseDto = new WeatherResponseDto();
             responseDto.setCity(cityDto);
             responseDto.setDayForecastList(dailyForecasts);
-            saveToCache(city, responseDto);
+           // saveToCache(city, responseDto);
             return responseDto;
         }catch (ServiceNotAvailableException e){
             WeatherResponseDto cached = getFromCache(city);
