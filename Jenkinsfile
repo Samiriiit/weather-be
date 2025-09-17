@@ -488,6 +488,49 @@
 //     }
 // }
 
+// pipeline {
+//     agent any
+//     stages {
+//         stage('Checkout Code') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
+//             }
+//         }
+        
+//         stage('Build Image') {
+//             steps {
+//                 bat 'mvn clean package -DskipTests'
+//                 bat 'minikube image build -t weather-be:latest .'
+//             }
+//         }
+        
+//         stage('Deploy') {
+//             steps {
+//                 bat 'kubectl apply -f redis-deployment.yaml'
+//                 // bat 'kubectl apply -f zipkin-deployment.yaml'
+//                 // bat 'kubectl apply -f grafana-deployment.yaml'
+//                 bat 'kubectl apply -f weather-be-deployment.yaml'
+//             }
+//         }
+        
+//         stage('Verify') {
+//             steps {
+//                 sleep(30)
+//                 bat "kubectl get pods -l app=weather-be | findstr Running"
+//                 echo "✅ Backend Pod is Running"
+//             }
+//         }
+//     }
+    
+//     post {
+//         always {
+//             echo "=== FINAL STATUS ==="
+//             bat 'kubectl get pods'
+//             bat 'kubectl get svc'
+//         }
+//     }
+// }
+
 pipeline {
     agent any
     stages {
@@ -500,15 +543,26 @@ pipeline {
         stage('Build Image') {
             steps {
                 bat 'mvn clean package -DskipTests'
-                bat 'minikube image build -t weather-be:latest .'
+                bat 'podman build -t weather-be:latest .'
+            }
+        }
+
+        stage('Load Image into Minikube') {
+            steps {
+                // Save Podman image to tar
+                bat 'podman save -o weather-be.tar weather-be:latest'
+
+                // Copy tar into Minikube VM
+                bat 'minikube cp weather-be.tar /home/docker/weather-be.tar'
+
+                // Import image inside Minikube runtime
+                bat 'minikube ssh "sudo ctr -n=k8s.io images import /home/docker/weather-be.tar"'
             }
         }
         
         stage('Deploy') {
             steps {
                 bat 'kubectl apply -f redis-deployment.yaml'
-                // bat 'kubectl apply -f zipkin-deployment.yaml'
-                // bat 'kubectl apply -f grafana-deployment.yaml'
                 bat 'kubectl apply -f weather-be-deployment.yaml'
             }
         }
