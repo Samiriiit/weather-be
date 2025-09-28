@@ -19,13 +19,13 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         // Apply CORS to weather-related endpoints
         registry.addMapping("/weather-prediction/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOrigins.add("http://localhost:50000");
                 .allowedMethods(ALLOWED_METHODS)
                 .allowedHeaders(ALLOWED_HEADERS)
                 .allowCredentials(true);
 
         registry.addMapping("/weather/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOrigins.add("http://localhost:50000");
                 .allowedMethods(ALLOWED_METHODS)
                 .allowedHeaders(ALLOWED_HEADERS)
                 .allowCredentials(true);
