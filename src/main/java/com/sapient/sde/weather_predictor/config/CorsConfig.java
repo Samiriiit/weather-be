@@ -9,23 +9,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig implements WebMvcConfigurer {
 
     // Make allowed origins configurable via application.properties
-    @Value("${app.cors.allowed-origins}")
-    private String[] allowedOrigins;
+    // @Value("${app.cors.allowed-origins}")
+    // private String[] allowedOrigins;
 
     private static final String[] ALLOWED_METHODS = { "GET" };
     private static final String[] ALLOWED_HEADERS = { "*" };
+    private static final String[] ALLOWED_ORIGINS = { "http://localhost:50000" };
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         // Apply CORS to weather-related endpoints
         registry.addMapping("/weather-prediction/**")
-                .allowedOrigins.add("http://localhost:50000");
+                .allowedOrigins(ALLOWED_ORIGINS)
                 .allowedMethods(ALLOWED_METHODS)
                 .allowedHeaders(ALLOWED_HEADERS)
                 .allowCredentials(true);
 
         registry.addMapping("/weather/**")
-                .allowedOrigins.add("http://localhost:50000");
+                .allowedOrigins(ALLOWED_ORIGINS)
                 .allowedMethods(ALLOWED_METHODS)
                 .allowedHeaders(ALLOWED_HEADERS)
                 .allowCredentials(true);
