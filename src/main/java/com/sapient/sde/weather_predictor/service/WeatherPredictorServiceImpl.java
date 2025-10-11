@@ -15,7 +15,17 @@ import org.springframework.web.client.*;
 import java.time.Duration;
 import java.util.*;
 
-@Service
+@Service // Singatlon pattern
+// Facade Pattern
+// WeatherPredictorServiceImpl acts as a facade to:
+
+// Call Redis cache
+
+// Call OpenWeather API
+
+// Transform data into DTO
+
+// Generate advice
 public class WeatherPredictorServiceImpl implements WeatherPredictorService {
 
     @Value("${openweathermap.api.key}")
@@ -27,6 +37,26 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     }
     private static final String API_URL =
             "https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={apiKey}&cnt=33";
+    // Factory design
+    // private interface WeatherFetcher {
+    //     JsonNode fetch(String city);
+    // }
+
+    // private class OpenWeatherFetcher implements WeatherFetcher {
+    //     @Override
+    //     public JsonNode fetch(String city) {
+    //         ResponseEntity<JsonNode> response = restTemplate.getForEntity(API_URL, JsonNode.class, city, apiKey);
+    //         return response.getBody();
+    //     }
+    // }
+
+    // private WeatherFetcher getFetcher(String mode) {
+    //     if ("openweather".equalsIgnoreCase(mode)) {
+    //         return new OpenWeatherFetcher();
+    //     }
+    //     //  add more fetchers here
+    //     return new OpenWeatherFetcher();
+    // }
 
     private RestTemplate restTemplate = new RestTemplate();
     private static final String CACHE_PREFIX = "weather::";
@@ -48,6 +78,8 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     }
     @Override
     public WeatherResponseDto getWeatherForecast(String city, boolean offlineMode) {
+        // It follows template method pattern
+        // It defines the sequence → check cache → fetch data → group forecasts → build DTO → generate advice. Submethods (fetchWeatherData, extractCityInfo, etc.) are customizable building blocks.
         try {
             if(offlineMode){
                 WeatherResponseDto cached = getFromCache(city);
@@ -55,6 +87,8 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
                     return cached;
                 }
             }
+            // // Factory design pattern
+            // WeatherFetcher fetcher = getFetcher("openweather");
             JsonNode root = fetchWeatherData(city);
             CityDto cityDto = extractCityInfo(root);
             Map<String, List<JsonNode>> forecastsByDate = groupForecastsByDate(root);
@@ -63,7 +97,7 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
             WeatherResponseDto responseDto = new WeatherResponseDto();
             responseDto.setCity(cityDto);
             responseDto.setDayForecastList(dailyForecasts);
-           // saveToCache(city, responseDto);
+            saveToCache(city, responseDto);
             return responseDto;
         }catch (ServiceNotAvailableException e){
             WeatherResponseDto cached = getFromCache(city);
@@ -75,6 +109,8 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     }
 
     private JsonNode fetchWeatherData(String city) {
+        // it follows Strategy Pattern
+        // Depending on mode, behavior changes between cache retrieval or API call — demonstrating interchangeable strategies.
         try {
             ResponseEntity<JsonNode> response = restTemplate.getForEntity(API_URL, JsonNode.class, city, apiKey);
             return response.getBody();

@@ -9,11 +9,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@RestController // Only one instance handles all incoming requests- Singleton pattern
 @Tag(name = "Weather API", description = "Get weather data from cache or external API")
 public class WeatherPredictorController {
     @Autowired
-    private WeatherPredictorService weatherPredictorService;
+    private WeatherPredictorService weatherPredictorService; // Singleton object injected
 
     @GetMapping (value = "weather-prediction")
     @Operation(

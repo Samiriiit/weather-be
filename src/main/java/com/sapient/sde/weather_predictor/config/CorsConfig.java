@@ -1,6 +1,7 @@
 package com.sapient.sde.weather_predictor.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -10,8 +11,20 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-@Configuration
+@Configuration // Singalton
+// Proxy Design Pattern
+// The SecurityFilterChain bean acts like a gatekeeper for HTTP requests.
+
+// Before requests hit your backend endpoints (/weather-prediction), Spring Security intercepts them.
+
+// CorsConfigurationSource decides whether the request origin, headers, and methods are allowed.
+
+// If not allowed → request is rejected (access control).
+
+// If allowed → request proceeds to your controller.
 public class CorsConfig {
+    @Value("${app.cors.allowed-origins:http://localhost:50000}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -26,7 +39,8 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:50000")); // frontend
+        List<String> origins = List.of(allowedOrigins.split(","));
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // include OPTIONS
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization", "Content-Type"));

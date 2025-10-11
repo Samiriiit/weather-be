@@ -592,6 +592,16 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
             }
         }
+         stage('Cleanup Old Pods & Images') {
+            steps {
+                echo "🧹 Cleaning up old FE pods and Podman images"
+                bat """
+                kubectl delete pod -l app=weather-fe --ignore-not-found
+                podman container prune -f
+                podman image prune -af
+                """
+            }
+        }
 
         stage('Build Image') {
             steps {
