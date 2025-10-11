@@ -142,9 +142,9 @@ spec:
         - containerPort: 8081
         env:
         - name: SPRING_REDIS_HOST
-          value: "redis-service"
+          value: "localhost"
         - name: SPRING_REDIS_PORT
-          value: "6379"
+          value: "50002"
         - name: OPENWEATHER_API_KEY
           value: "d2929e9483efc82c82c32ee7e02d563e"  # Direct value
         - name: APP_CORS_ALLOWED_ORIGINS
