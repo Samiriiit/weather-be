@@ -14,14 +14,11 @@ import java.util.List;
 @Configuration // Singalton
 // Proxy Design Pattern
 // The SecurityFilterChain bean acts like a gatekeeper for HTTP requests.
-
-// Before requests hit your backend endpoints (/weather-prediction), Spring Security intercepts them.
-
+// Before requests hit backend endpoints (/weather-prediction), Spring Security intercepts them.
 // CorsConfigurationSource decides whether the request origin, headers, and methods are allowed.
-
 // If not allowed → request is rejected (access control).
-
 // If allowed → request proceeds to your controller.
+
 public class CorsConfig {
     @Value("${app.cors.allowed-origins:http://localhost:50000}")
     private String allowedOrigins;

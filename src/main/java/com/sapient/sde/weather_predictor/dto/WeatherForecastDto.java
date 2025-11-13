@@ -147,7 +147,11 @@ public class WeatherForecastDto {
     }
 }
 
-// // Builder pattern allows creating WeatherForecastDto objects step-by-step.
+// Builder pattern allows creating WeatherForecastDto objects step-by-step.simplify process for big projects
+//	Object creation step-by-step customizion without directly calling constructor with lots of parameters.
+
+
+
 // // Useful for objects with many optional fields (like here).
 // @JsonInclude(JsonInclude.Include.NON_NULL)
 // public class WeatherForecastDto {

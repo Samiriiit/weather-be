@@ -16,16 +16,8 @@ import java.time.Duration;
 import java.util.*;
 
 @Service // Singatlon pattern
-// Facade Pattern
-// WeatherPredictorServiceImpl acts as a facade to:
+// Facade Pattern: WeatherPredictorServiceImpl acts as a facade to: Call Redis cache Call OpenWeather API Transform data into DTO
 
-// Call Redis cache
-
-// Call OpenWeather API
-
-// Transform data into DTO
-
-// Generate advice
 public class WeatherPredictorServiceImpl implements WeatherPredictorService {
 
     @Value("${openweathermap.api.key}")
@@ -78,7 +70,7 @@ public class WeatherPredictorServiceImpl implements WeatherPredictorService {
     }
     @Override
     public WeatherResponseDto getWeatherForecast(String city, boolean offlineMode) {
-        // It follows template method pattern
+        // Template method pattern
         // It defines the sequence → check cache → fetch data → group forecasts → build DTO → generate advice. Submethods (fetchWeatherData, extractCityInfo, etc.) are customizable building blocks.
         try {
             if(offlineMode){

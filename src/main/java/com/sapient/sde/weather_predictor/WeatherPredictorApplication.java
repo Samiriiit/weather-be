@@ -11,7 +11,8 @@ public class WeatherPredictorApplication {
 	public static void main(String[] args) {
 		System.out.println("Samir");
 		SpringApplication.run(WeatherPredictorApplication.class, args);
-
+		// container start -> create beans -> dependency created-> injected ->destroy
+        // H – High Cohesion, O – Open Collaboration, T – Testability, S – Separation of Concerns, H- High avl
 	}
 
 }
