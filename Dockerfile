@@ -14,7 +14,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Step 2: Run stage
-FROM openjdk:17-jdk
+FROM openjdk:17-jdk-slim
 # work directory created
 WORKDIR /app
 

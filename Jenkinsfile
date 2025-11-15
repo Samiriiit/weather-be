@@ -87,7 +87,7 @@ pipeline {
                     aws ecr get-login-password --region $AWS_REGION \
                     | docker login --username AWS --password-stdin $ECR
 
-                    docker build -t $ECR:$TAG .
+                    docker build --no-cache -t $ECR:$TAG .
                     docker push $ECR:$TAG
                 """
             }
@@ -123,9 +123,6 @@ pipeline {
         failure {
             echo "❌ Deployment failed!"
         }
-        always {
-            sh 'kubectl get pods -l app=weather-be'
-            sh 'kubectl get svc -l app=weather-be'
-        }
+        always { cleanWs() }
     }
 }
