@@ -17,6 +17,7 @@ import java.util.List;
 // Before requests hit backend endpoints (/weather-prediction), Spring Security intercepts them.
 // CorsConfigurationSource decides whether the request origin, headers, and methods are allowed.
 // If not allowed → request is rejected (access control).
+//
 // If allowed → request proceeds to your controller.
 
 public class CorsConfig {
