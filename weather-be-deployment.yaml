@@ -22,7 +22,7 @@
 #     spec:
 #       containers:
 #         - name: weather-be
-#           image: 490196132533.dkr.ecr.us-east-1.amazonaws.com/weather-be:v1.0.0-dev
+#           image: 490196132533.dkr.ecr.us-east-1.amazonaws.com/weather-be:v1.0.0-prod
 #           imagePullPolicy: Always
 #           ports:
 #             - containerPort: 8081
