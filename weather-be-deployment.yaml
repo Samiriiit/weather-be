@@ -1,4 +1,65 @@
 
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: weather-be
+#   labels:
+#     app: weather-be
+# spec:
+#   replicas: 1
+#   strategy:
+#     type: RollingUpdate
+#     rollingUpdate:
+#       maxUnavailable: 0
+#       maxSurge: 1
+#   selector:
+#     matchLabels:
+#       app: weather-be
+#   template:
+#     metadata:
+#       labels:
+#         app: weather-be
+#     spec:
+#       containers:
+#         - name: weather-be
+#           image: 490196132533.dkr.ecr.us-east-1.amazonaws.com/weather-be:v1.0.0-dev
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 8081
+#           env:
+#             - name: SPRING_REDIS_HOST
+#               value: "redis-service"
+#             - name: SPRING_REDIS_PORT
+#               value: "6379"
+#             - name: OPENWEATHER_API_KEY
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: openweather-key
+#                   key: API_KEY
+#             - name: APP_CORS_ALLOWED_ORIGINS
+#               value: "http://localhost:3001,http://localhost:50000,http://localhost:30001,http://54.234.127.44:30469/"
+#           resources:
+#             requests:
+#               memory: "512Mi"
+#               cpu: "250m"
+#             limits:
+#               memory: "1Gi"
+#               cpu: "500m"
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: weather-be-service
+#   labels:
+#     app: weather-be
+# spec:
+#   selector:
+#     app: weather-be
+#   ports:
+#     - port: 8081
+#       targetPort: 8081
+#   type: LoadBalancer
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,6 +108,7 @@ spec:
               cpu: "500m"
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -60,3 +122,25 @@ spec:
     - port: 8081
       targetPort: 8081
   type: LoadBalancer
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: weather-be-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: weather-be
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+
