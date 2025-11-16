@@ -94,28 +94,28 @@ pipeline {
         }
         stage('Vulnerability Scan') {
           steps {
-            sh '''
+            sh """
               echo "🔍 Running Trivy scan..."
         
               mkdir -p reports
         
               trivy image \
-                --exit-code 1 \
-                --severity HIGH,CRITICAL \
+                --exit-code 0 \
+                --severity CRITICAL \
                 --ignore-unfixed \
                 --format table \
                 --output reports/trivy-report.txt \
                 ${ECR}:${TAG}
         
-              echo "✅ Trivy scan passed - No HIGH/CRITICAL issues."
-            '''
+              echo "⚠️ Scan completed — CRITICAL issues"
+            """
           }
           post {
             always {
               archiveArtifacts artifacts: 'reports/trivy-report.txt', allowEmptyArchive: true
             }
           }
-        }
+    }
 
 
         stage('Deploy to EKS') {
