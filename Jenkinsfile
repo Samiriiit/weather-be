@@ -71,7 +71,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Samiriiit/weather-be.git'
+                git branch: 'eks', url: 'https://github.com/Samiriiit/weather-be.git'
             }
         }
 
