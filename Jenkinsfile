@@ -98,6 +98,11 @@ pipeline {
                 sh 'kubectl apply -f weather-be-deployment.yaml'
             }
         }
+         stage('Grafana deployment') {
+            steps {
+                sh 'kubectl apply -f grafana-deployment.yaml'
+            }
+        }
 
         stage('Verify Deployment') {
             steps {
