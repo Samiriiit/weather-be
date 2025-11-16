@@ -93,12 +93,6 @@ pipeline {
             }
         }
 
-        stage('Cleanup Old Pods') {
-            steps {
-                sh 'kubectl delete pod -l app=weather-be --ignore-not-found'
-            }
-        }
-
         stage('Deploy to EKS') {
             steps {
                 sh 'kubectl apply -f weather-be-deployment.yaml'
