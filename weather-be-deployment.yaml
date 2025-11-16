@@ -1,67 +1,3 @@
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata: # Basic info
-#   name: weather-be
-#   labels:
-#     app: weather-be
-# spec:
-#   replicas: 1
-#   strategy:
-#     type: RollingUpdate
-#     rollingUpdate:
-#       maxUnavailable: 0 # no pod is ever down during rollout.
-#       maxSurge: 1 # allows one extra pod to run temporarily during the update
-#   selector:
-#     matchLabels:
-#       app: weather-be # pod to refer
-#   template:
-#     metadata:
-#       labels:
-#         app: weather-be # pod label
-#     spec:
-#       containers:
-#       - name: weather-be # container name
-#         image: weather-be:latest  # docker image name
-#         imagePullPolicy: Never # Don’t pull from registry; use local image.
-#         ports:
-#         - containerPort: 8081 # Port the container listens on
-#         env:
-#         - name: SPRING_REDIS_HOST
-#           value: "redis-service"
-#         - name: SPRING_REDIS_PORT
-#           value: "6379"
-#         - name: OPENWEATHER_API_KEY
-#           value: "d2929e9483efc82c82c32ee7e02d563e"  # Direct value
-#         # - name: OPENWEATHER_API_KEY
-#         #   valueFrom:
-#         #     secretKeyRef:
-#         #       name: openweather-key
-#         #       key: API_KEY
-#         - name: APP_CORS_ALLOWED_ORIGINS
-#           value: "http://localhost:3001,http://localhost:50000,http://localhost:30001"  # Direct value
-#         resources:
-#           requests:
-#             memory: "512Mi"
-#             cpu: "250m"
-#           limits:
-#             memory: "1Gi"
-#             cpu: "500m"
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: weather-be-service
-#   labels:
-#     app: weather-be
-# spec:
-#   selector:
-#     app: weather-be # tells Service which pods it should route traffic to.
-#   ports:
-#   - port: 8081
-#     targetPort: 8081
-#     nodePort: 31002    # external port on Node
-#   type: NodePort
-#   # type: ClusterIP
 
 apiVersion: apps/v1
 kind: Deployment
@@ -86,7 +22,7 @@ spec:
     spec:
       containers:
         - name: weather-be
-          image: 490196132533.dkr.ecr.us-east-1.amazonaws.com/weather-be:latest
+          image: 490196132533.dkr.ecr.us-east-1.amazonaws.com/weather-be:v1.0.0-dev
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
