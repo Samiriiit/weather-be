@@ -21,7 +21,7 @@ import java.util.List;
 // If allowed → request proceeds to your controller.
 
 public class CorsConfig {
-    @Value("${app.cors.allowed-origins:http://localhost:50000}")
+    @Value("${app.cors.allowed-origins:http://54.234.127.44:30469/}")
     private String allowedOrigins;
 
     @Bean
