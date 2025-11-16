@@ -66,6 +66,7 @@ pipeline {
         TAG = 'latest'
         CLUSTER_NAME = 'weather-app'
         CONTAINER_NAME = 'weather-be'
+        ENVIRONMENT = "prod"
     }
 
     stages {
@@ -87,8 +88,8 @@ pipeline {
                     aws ecr get-login-password --region $AWS_REGION \
                     | docker login --username AWS --password-stdin $ECR
 
-                    docker build --no-cache -t $ECR:$TAG .
-                    docker push $ECR:$TAG
+                    docker build --no-cache --build-arg APP_ENV=${ENVIRONMENT} -t $ECR:$TAG .
+                    docker push $ECR:${TAG}-${ENVIRONMENT}
                 """
             }
         }
@@ -107,14 +108,14 @@ pipeline {
                 --output reports/trivy-report.txt \
                 ${ECR}:${TAG}
         
-              echo "⚠️ Scan completed — CRITICAL issues"
+              echo "⚠️ Scan completed"
             """
           }
-          post {
-            always {
-              archiveArtifacts artifacts: 'reports/trivy-report.txt', allowEmptyArchive: true
-            }
-          }
+          // post {
+          //   always {
+          //     archiveArtifacts artifacts: 'reports/trivy-report.txt', allowEmptyArchive: true
+          //   }
+          // }
     }
 
 
