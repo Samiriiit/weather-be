@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.sapient.sde.weather_predictor.dto.*;
 import com.sapient.sde.weather_predictor.exceptions.CityNotAvailableException;
 import com.sapient.sde.weather_predictor.exceptions.ServiceNotAvailableException;
+import com.sapient.sde.weather_predictor.factory.WeatherFetcherFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,100 +21,70 @@ import java.util.*;
 
 public class WeatherPredictorServiceImpl implements WeatherPredictorService {
 
-    @Value("${openweathermap.api.key}")
-    private String apiKey;
-
-    // Package-private setter for testing
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-    private static final String API_URL =
-            "https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={apiKey}&cnt=33";
-    // Factory design
-    // private interface WeatherFetcher {
-    //     JsonNode fetch(String city);
-    // }
-
-    // private class OpenWeatherFetcher implements WeatherFetcher {
-    //     @Override
-    //     public JsonNode fetch(String city) {
-    //         ResponseEntity<JsonNode> response = restTemplate.getForEntity(API_URL, JsonNode.class, city, apiKey);
-    //         return response.getBody();
-    //     }
-    // }
-
-    // private WeatherFetcher getFetcher(String mode) {
-    //     if ("openweather".equalsIgnoreCase(mode)) {
-    //         return new OpenWeatherFetcher();
-    //     }
-    //     //  add more fetchers here
-    //     return new OpenWeatherFetcher();
-    // }
-
-    private RestTemplate restTemplate = new RestTemplate();
-    private static final String CACHE_PREFIX = "weather::";
-
-    @Autowired
-    private RedisTemplate<String, WeatherResponseDto> redisTemplate;
-
-    public void setRestTemplate(RestTemplate restTemplate) { this.restTemplate = restTemplate; }
-
-    private WeatherResponseDto getFromCache(String city) {
-        ValueOperations<String, WeatherResponseDto> ops = redisTemplate.opsForValue();
-        return ops.get(CACHE_PREFIX + city.toLowerCase());
+    private final WeatherFetcherFactory fetcherFactory;
+    private final WeatherCache cacheService;
+    private final RestTemplate restTemplate;
+    public WeatherPredictorServiceImpl(RestTemplate restTemplate,
+                                       WeatherFetcherFactory fetcherFactory,
+                                       WeatherCache cacheService) {
+        this.restTemplate = restTemplate;
+        this.fetcherFactory = fetcherFactory;
+        this.cacheService = cacheService;
     }
 
-    private void saveToCache(String city, WeatherResponseDto response) {
-        System.out.println(response);
-        ValueOperations<String, WeatherResponseDto> ops = redisTemplate.opsForValue();
-        ops.set(CACHE_PREFIX + city.toLowerCase(), response);
-    }
     @Override
     public WeatherResponseDto getWeatherForecast(String city, boolean offlineMode) {
-        // Template method pattern
-        // It defines the sequence → check cache → fetch data → group forecasts → build DTO → generate advice. Submethods (fetchWeatherData, extractCityInfo, etc.) are customizable building blocks.
-        try {
-            if(offlineMode){
-                WeatherResponseDto cached = getFromCache(city);
-                if (cached != null) {
-                    return cached;
-                }
-            }
-            // // Factory design pattern
-            // WeatherFetcher fetcher = getFetcher("openweather");
-            JsonNode root = fetchWeatherData(city);
-            CityDto cityDto = extractCityInfo(root);
-            Map<String, List<JsonNode>> forecastsByDate = groupForecastsByDate(root);
-            List<DayForecastDto> dailyForecasts = buildDailyForecasts(forecastsByDate);
-
-            WeatherResponseDto responseDto = new WeatherResponseDto();
-            responseDto.setCity(cityDto);
-            responseDto.setDayForecastList(dailyForecasts);
-           // saveToCache(city, responseDto);
-            return responseDto;
-        }catch (ServiceNotAvailableException e){
-            WeatherResponseDto cached = getFromCache(city);
-            if (cached != null) {
-                return cached;
-            }
-            throw e;
+        /**
+         * --------------------------------
+         * ISP: Interface Segregation Principle
+         * service depends only on the small WeatherCache interface.
+         * It uses only 'get' — no large bloated interface required.
+         * Also follows SRP because this block only retrieves cache.
+         * --------------------------------
+         */
+        if (offlineMode) {
+            WeatherResponseDto cached = cacheService.get(city);
+            System.out.println("cache"+ cached);
+            if (cached != null) return cached;
         }
-    }
 
-    private JsonNode fetchWeatherData(String city) {
-        // it follows Strategy Pattern
-        // Depending on mode, behavior changes between cache retrieval or API call — demonstrating interchangeable strategies.
-        try {
-            ResponseEntity<JsonNode> response = restTemplate.getForEntity(API_URL, JsonNode.class, city, apiKey);
-            return response.getBody();
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new CityNotAvailableException("No city found with name: " + city);
-            }
-            throw e;
-        } catch (HttpServerErrorException e) {
-            throw new ServiceNotAvailableException("Weather API is unavailable");
-        }
+        /**
+         * --------------------------------
+         * OCP: Open/Closed Principle
+         * We can add new fetchers (OpenWeatherApi, WeatherAPI, AccuWeather)
+         * without modifying this controller/service.
+
+         * LSP: Liskov Substitution Principle
+         * Any WeatherFetcher implementation can replace another
+         * without breaking this class.
+         *
+         * fetcher.fetchWeather(city) always behaves correctly,
+         * regardless of which implementation is injected.
+         * --------------------------------
+         */
+        // Factory decides which fetcher to use.
+
+        WeatherFetcher fetcher = fetcherFactory.getFetcher();
+        JsonNode root = fetcher.fetchWeather(city);
+
+        CityDto cityDto = extractCityInfo(root);
+
+
+        Map<String, List<JsonNode>> forecastsByDate = groupForecastsByDate(root);
+        List<DayForecastDto> dailyForecasts = buildDailyForecasts(forecastsByDate);
+
+
+        dailyForecasts.forEach(day -> day.setAdvice(generateAdvice(day.getWeatherForecastList().get(0))));
+
+
+        WeatherResponseDto response = new WeatherResponseDto();
+        response.setCity(cityDto);
+        response.setDayForecastList(dailyForecasts);
+
+        // 7️⃣ Save to cache if needed
+        if (offlineMode) cacheService.save(city, response);
+
+        return response;
     }
 
     private CityDto extractCityInfo(JsonNode root) {

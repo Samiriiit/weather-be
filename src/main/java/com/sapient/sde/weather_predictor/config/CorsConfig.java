@@ -11,14 +11,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-@Configuration // Singalton
+@Configuration
 // Proxy Design Pattern
-// The SecurityFilterChain bean acts like a gatekeeper for HTTP requests.
-// Before requests hit backend endpoints (/weather-prediction), Spring Security intercepts them.
-// CorsConfigurationSource decides whether the request origin, headers, and methods are allowed.
-// If not allowed → request is rejected (access control).
-//
-// If allowed → request proceeds to your controller.
+// Spring Security's FilterChain + CORS acts as a PROXY for controllers.
+// Every request passes through these filters BEFORE reaching real endpoints.
+// The proxy (SecurityFilterChain) decides whether to allow or block the request.
+// If origin/method/headers are not allowed → blocked before controller.
+// If allowed → request is forwarded to the real target (controller).
 
 public class CorsConfig {
     @Value("${app.cors.allowed-origins:http://54.234.127.44:30469/}")

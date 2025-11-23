@@ -14,7 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration // Singalton pattern
 public class RadisConfig {
-    @Bean
+    @Bean // Singalton pattern
     public RedisTemplate<String, WeatherResponseDto> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, WeatherResponseDto> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
